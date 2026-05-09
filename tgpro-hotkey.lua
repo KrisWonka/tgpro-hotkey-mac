@@ -36,7 +36,8 @@ loadConfig()
 
 local autoRevertTimer = nil
 local cooldownTimer   = nil
-local cycleIndex      = 0
+-- 起点假设为列表第 1 档（Silence / Auto = Mac 默认状态），按一下进第 2 档
+local cycleIndex      = 1
 local applyInProgress = false  -- 防抖：apply 期间忽略新按键
 
 local function readTemp()
