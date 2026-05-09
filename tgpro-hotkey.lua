@@ -1,0 +1,170 @@
+-- ===== tgpro-hotkey-mac =====
+-- 按用户自定义的「档位列表」循环切换 TG Pro 的 Auto Max Rules
+-- https://github.com/KrisWonka/tgpro-hotkey-mac
+
+local M = {}
+
+local HS_DIR = os.getenv("HOME") .. "/.hammerspoon"
+local CONFIG_PATH = HS_DIR .. "/tgpro-hotkey-config.json"
+local READTEMP_BIN = HS_DIR .. "/readtemp"
+local TGPRO_BIN    = HS_DIR .. "/tgpro-rules"
+
+-- 默认配置（被 tgpro-hotkey-config.json 覆盖；JSON 是 FanHotkey.app 写的）
+local cfg = {
+  hotkeyEnabled = true,
+  hotkeyMods = { "ctrl", "alt", "cmd" },
+  hotkeyKey = "8",
+  alertEnabled = true,
+  alertCooldownDone = "Cooldown done ✓",
+  alertDuration = 1.2,
+  cycleSteps = {
+    { type = "auto" },
+    { type = "fullBlast", autoRevertEnabled = false, autoRevertSec = 600 },
+    { type = "cooldown",  cooldownTargetTemp = 40, cooldownPollSec = 3 },
+  },
+}
+
+local function loadConfig()
+  local f = io.open(CONFIG_PATH, "r")
+  if not f then return end
+  local raw = f:read("*a"); f:close()
+  local ok, parsed = pcall(hs.json.decode, raw)
+  if not ok or type(parsed) ~= "table" then return end
+  for k, v in pairs(parsed) do cfg[k] = v end
+end
+loadConfig()
+
+local autoRevertTimer = nil
+local cooldownTimer   = nil
+local cycleIndex      = 0
+local applyInProgress = false  -- 防抖：apply 期间忽略新按键
+
+local function readTemp()
+  local f = io.popen(READTEMP_BIN .. " 2>/dev/null")
+  if not f then return nil end
+  local out = f:read("*a"); f:close()
+  return tonumber((out or ""):match("[%d%.]+"))
+end
+
+local function alert(text)
+  if cfg.alertEnabled then hs.alert.show(text, cfg.alertDuration) end
+end
+
+-- 异步把规则数组喂给 tgpro-rules（同步会阻塞 Hammerspoon 1-2 秒）
+local function applyRules(rules)
+  applyInProgress = true
+  local body = hs.json.encode({ rules = rules or {} })
+  local task = hs.task.new(TGPRO_BIN, function() applyInProgress = false end, { "apply" })
+  if not task then applyInProgress = false; return end
+  task:setInput(body)
+  task:start()
+end
+
+local function clearRules()
+  applyInProgress = true
+  local task = hs.task.new(TGPRO_BIN, function() applyInProgress = false end, { "clear" })
+  if not task then applyInProgress = false; return end
+  task:start()
+end
+
+local function defaultName(t)
+  if t == "auto"        then return "Auto"
+  elseif t == "fullBlast"   then return "Full Blast"
+  elseif t == "cooldown"    then return "Cooldown"
+  elseif t == "temperature" then return "Temperature"
+  end
+  return t or "?"
+end
+
+local function effectiveName(step)
+  local n = step.name
+  if type(n) == "string" then
+    n = n:gsub("^%s*(.-)%s*$", "%1")
+    if #n > 0 then return n end
+  end
+  return defaultName(step.type)
+end
+
+local function cancelAutoRevert()
+  if autoRevertTimer then autoRevertTimer:stop(); autoRevertTimer = nil end
+end
+
+local function cancelCooldown()
+  if cooldownTimer then cooldownTimer:stop(); cooldownTimer = nil end
+end
+
+local function scheduleAutoRevert(step)
+  cancelAutoRevert()
+  if not step.autoRevertEnabled then return end
+  local sec = step.autoRevertSec or 600
+  autoRevertTimer = hs.timer.doAfter(sec, function()
+    autoRevertTimer = nil
+    clearRules()
+    alert(defaultName("auto") .. " ⏱")
+  end)
+end
+
+local function startCooldown(step)
+  cancelCooldown()
+  applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
+  alert(effectiveName(step))
+  local target = step.cooldownTargetTemp or 40
+  local poll   = step.cooldownPollSec or 3
+  cooldownTimer = hs.timer.doEvery(poll, function()
+    local t = readTemp()
+    if t and t < target then
+      cancelCooldown()
+      clearRules()
+      alert(cfg.alertCooldownDone)
+    end
+  end)
+end
+
+local function applyTemperature(step)
+  local rules = {}
+  for _, p in ipairs(step.curve or {}) do
+    table.insert(rules, {
+      percent = p.percent or 100,
+      temperatureLimit = p.temperatureLimit or 0,
+      configSensor = step.configSensor or 4,  -- Highest CPU
+      configFan = step.configFan or 0,        -- All Fans
+    })
+  end
+  applyRules(rules)
+  alert(effectiveName(step))
+end
+
+local function applyStep(step)
+  cancelAutoRevert()
+  cancelCooldown()
+  local t = step and step.type
+  if t == "auto" then
+    clearRules()
+    alert(effectiveName(step))
+  elseif t == "fullBlast" then
+    applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
+    scheduleAutoRevert(step)
+    alert(effectiveName(step))
+  elseif t == "cooldown" then
+    startCooldown(step)
+  elseif t == "temperature" then
+    applyTemperature(step)
+  end
+end
+
+local function cycle()
+  if applyInProgress then return end  -- 防抖
+  local steps = cfg.cycleSteps or {}
+  if #steps == 0 then
+    alert("循环列表为空")
+    return
+  end
+  cycleIndex = cycleIndex % #steps + 1
+  applyStep(steps[cycleIndex])
+end
+
+if cfg.hotkeyEnabled and cfg.hotkeyKey and #cfg.hotkeyMods > 0 then
+  hs.hotkey.bind(cfg.hotkeyMods, cfg.hotkeyKey, cycle)
+end
+
+return M
