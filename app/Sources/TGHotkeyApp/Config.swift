@@ -123,8 +123,9 @@ struct TGHotkeyConfig: Codable, Equatable {
 
     var cycleSteps: [CycleStep] = [
         CycleStep(type: .auto),
+        CycleStep(type: .temperature, name: "Silence",     curve: CurveTemplate.silence.points),
         CycleStep(type: .temperature, name: "Performance", curve: CurveTemplate.performance.points),
-        CycleStep(type: .temperature, name: "Turbo", curve: CurveTemplate.turbo.points),
+        CycleStep(type: .temperature, name: "Turbo",       curve: CurveTemplate.turbo.points),
         CycleStep(type: .cooldown),
     ]
 
