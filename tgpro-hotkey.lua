@@ -168,4 +168,11 @@ if cfg.hotkeyEnabled and cfg.hotkeyKey and #cfg.hotkeyMods > 0 then
   hs.hotkey.bind(cfg.hotkeyMods, cfg.hotkeyKey, cycle)
 end
 
+-- 启动时弹一下当前默认档位（cycleIndex 起点 = 1）
+if cfg.cycleSteps and cfg.cycleSteps[cycleIndex] then
+  hs.timer.doAfter(0.5, function()
+    alert(effectiveName(cfg.cycleSteps[cycleIndex]))
+  end)
+end
+
 return M
