@@ -7,8 +7,20 @@ struct SettingsView: View {
 
     enum SaveStatus { case idle, saving, saved, error(String) }
 
+    @State private var autostart: Bool = Autostart.isEnabled
+
     var body: some View {
         Form {
+            Section("开机自启") {
+                Toggle("登录时自动启动 Hammerspoon + TG Pro", isOn: Binding(
+                    get: { autostart },
+                    set: { v in autostart = v; Autostart.setEnabled(v) }
+                ))
+                Text("写一个 LaunchAgent 到 ~/Library/LaunchAgents/com.kriswonka.tghotkey.autostart.plist。系统启动后两个 app 后台启动，无窗口闪现。关闭即删 plist。")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             Section("快捷键") {
                 Toggle("启用全局快捷键", isOn: $config.hotkeyEnabled)
                 HStack {
