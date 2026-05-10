@@ -107,7 +107,7 @@ end
 
 local function startCooldown(step)
   cancelCooldown()
-  applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
+  applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 0, configFan = 0 } })
   alert(effectiveName(step))
   local target = step.cooldownTargetTemp or 40
   local poll   = step.cooldownPollSec or 3
@@ -127,7 +127,7 @@ local function applyTemperature(step)
     table.insert(rules, {
       percent = p.percent or 100,
       temperatureLimit = p.temperatureLimit or 0,
-      configSensor = step.configSensor or 4,  -- Highest CPU
+      configSensor = step.configSensor or 0,  -- Any Sensor
       configFan = step.configFan or 0,        -- All Fans
     })
   end
@@ -143,7 +143,7 @@ local function applyStep(step)
     clearRules()
     alert(effectiveName(step))
   elseif t == "fullBlast" then
-    applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
+    applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 0, configFan = 0 } })
     scheduleAutoRevert(step)
     alert(effectiveName(step))
   elseif t == "cooldown" then
