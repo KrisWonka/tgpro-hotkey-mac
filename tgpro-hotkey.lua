@@ -17,10 +17,28 @@ local cfg = {
   alertEnabled = true,
   alertCooldownDone = "Cooldown done ✓",
   alertDuration = 1.2,
+  -- 默认 3 档：Silence (Auto) / Performance / Turbo（GUI 第一次保存会覆盖此 JSON）
   cycleSteps = {
-    { type = "auto" },
-    { type = "fullBlast", autoRevertEnabled = false, autoRevertSec = 600 },
-    { type = "cooldown",  cooldownTargetTemp = 40, cooldownPollSec = 3 },
+    { type = "auto", name = "Silence" },
+    { type = "temperature", name = "Performance", configSensor = 0, configFan = 0, curve = {
+        { temperatureLimit = 30, percent = 0 },
+        { temperatureLimit = 40, percent = 0 },
+        { temperatureLimit = 50, percent = 25 },
+        { temperatureLimit = 60, percent = 60 },
+        { temperatureLimit = 70, percent = 75 },
+        { temperatureLimit = 80, percent = 90 },
+        { temperatureLimit = 90, percent = 100 },
+    } },
+    { type = "temperature", name = "Turbo", configSensor = 0, configFan = 0, curve = {
+        { temperatureLimit = 20, percent = 0 },
+        { temperatureLimit = 30, percent = 0 },
+        { temperatureLimit = 45, percent = 0 },
+        { temperatureLimit = 50, percent = 35 },
+        { temperatureLimit = 60, percent = 95 },
+        { temperatureLimit = 70, percent = 100 },
+        { temperatureLimit = 80, percent = 100 },
+        { temperatureLimit = 90, percent = 100 },
+    } },
   },
 }
 
