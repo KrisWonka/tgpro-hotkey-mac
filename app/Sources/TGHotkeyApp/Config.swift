@@ -105,7 +105,7 @@ struct CycleStep: Codable, Identifiable, Equatable {
 
     // Temperature 专属
     var curve: [CurvePoint] = []
-    var configSensor: Int = 4   // 4 = Highest CPU
+    var configSensor: Int = 0   // 0 = Any Sensor（取所有 sensor 最高温触发）
     var configFan: Int = 0      // 0 = All Fans
 
     var effectiveName: String {
