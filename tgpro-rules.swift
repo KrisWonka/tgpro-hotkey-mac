@@ -177,6 +177,9 @@ case "apply":
     prefs["autoConfigsBattery"] = archiveRules(batteryRules)
     // 确保 useManualInsteadOfMax 是 false（否则规则不触发）
     prefs["useManualInsteadOfMax"] = false
+    // 必须开 Auto Boost 模式 —— 否则 Auto Max 模式下所有 percent 都被强制 100%！
+    // TG Pro UI 写在 Settings → Fan → Completely Override System → "Use Auto Boost instead of Auto Max"
+    prefs["useAutoBoostInsteadOfAutoMax"] = true
     savePrefs(prefs)
     openTGPro()
     print("✓ 应用 \(powerRules.count) 条规则 + 重启 TG Pro")
