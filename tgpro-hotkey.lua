@@ -142,12 +142,15 @@ end
 local function applyTemperature(step)
   local rules = {}
   for _, p in ipairs(step.curve or {}) do
-    table.insert(rules, {
-      percent = p.percent or 100,
-      temperatureLimit = p.temperatureLimit or 0,
-      configSensor = step.configSensor or 0,  -- Any Sensor
-      configFan = step.configFan or 0,        -- All Fans
-    })
+    -- percent < 0 = "Stop" 档，跳过不写规则（让系统 Auto 决定，风扇可停）
+    if (p.percent or 0) >= 0 then
+      table.insert(rules, {
+        percent = p.percent,
+        temperatureLimit = p.temperatureLimit or 0,
+        configSensor = step.configSensor or 0,  -- Any Sensor
+        configFan = step.configFan or 0,        -- All Fans
+      })
+    end
   end
   applyRules(rules)
   alert(effectiveName(step))

@@ -248,9 +248,14 @@ struct SettingsView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 6).stroke(Color.gray.opacity(0.3), lineWidth: 1)
                 )
-            Text("X 轴 20–90°C（5°C 一格） · Y 轴 0–100%（5% 一格）；规则按温度升序排列，TG Pro 选当前温度满足的最高百分比")
+            Text("""
+                X 轴 20–90°C（5°C 一格） · Y 轴 0–100%（5% 一格）+ 底部 Stop 档（橙色）。
+                百分比是相对于风扇 RPM 范围（0% = 硬件最低 RPM ≈ 2317；100% = max ≈ 7826）。
+                把点拖到 Stop 区表示该温度无规则，让系统自动控制（风扇可彻底停转）。
+                """)
                 .font(.caption2)
                 .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
