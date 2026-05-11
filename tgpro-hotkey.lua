@@ -197,14 +197,45 @@ end
 --   第 2 行: Fans Off       (无 SMC 访问权限拿不到 RPM)
 local statusBar = hs.menubar.new(true, "tgproHotkeyIndicator")
 
+-- 读 TG Pro 状态栏 item 的 tooltip 文本，里面有 TG Pro 自己算好的最热 sensor / 平均温度
+-- 形如:
+--   GPU Region 1 (Highest): 35°C
+--   Average CPU: 34°C
+--   Override System Enabled
+local function readTGProTooltip()
+  local script = [[
+    tell application "System Events"
+      try
+        return help of menu bar item 1 of menu bar 2 of process "TG Pro"
+      on error
+        return ""
+      end try
+    end tell
+  ]]
+  local ok, result = hs.osascript.applescript(script)
+  if ok and type(result) == "string" then return result end
+  return ""
+end
+
+-- 从 tooltip 抓「Hottest sensor 简称 + 温度」
+local function parseHottest(tooltip)
+  for line in (tooltip or ""):gmatch("[^\n\r]+") do
+    -- 匹配 "Xxx (Highest): 35°C" 这种
+    local name, temp = line:match("^(.-)%s*%(Highest%):%s*(%d+)")
+    if name and temp then return name, tonumber(temp) end
+  end
+  return nil, nil
+end
+
 local function fmtTitle()
   local step = cfg.cycleSteps[cycleIndex] or {}
   local mode = effectiveName(step)
-  local t = readTemp()
+  local tooltip = readTGProTooltip()
+  local hotName, hotTemp = parseHottest(tooltip)
+  local t = hotTemp or readTemp()
   local tempStr = t and string.format("%d°C", math.floor(t + 0.5)) or "—°C"
-  -- TG Pro 风格的 monospaced 小字 + 两行
   local line1 = string.format("%s  %s", mode, tempStr)
-  local line2 = "Fans —"  -- TODO: 拿不到 SMC fan RPM；显示静态占位
+  local line2 = hotName and string.format("%.16s", hotName) or "Fans —"
   return hs.styledtext.new(line1 .. "\n" .. line2, {
     font = { name = "Menlo", size = 9 },
     paragraphStyle = { alignment = "right", lineSpacing = -2 },
