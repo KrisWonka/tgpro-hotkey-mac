@@ -74,8 +74,15 @@ func cpuAverage(_ sensors: [(name: String, value: Double)]) -> Double? {
     return pool.map { $0.value }.reduce(0, +) / Double(pool.count)
 }
 
+// 同名 sensor 出现多次时合并并取均值（M 系列上 IOHID 经常重复 expose 同一物理 sensor）
+func dedup(_ arr: [(name: String, value: Double)]) -> [(name: String, value: Double)] {
+    var groups: [String: [Double]] = [:]
+    for s in arr { groups[s.name, default: []].append(s.value) }
+    return groups.map { (name: $0.key, value: $0.value.reduce(0,+) / Double($0.value.count)) }
+}
+
 // ---- 主流程 ----
-let sensors = readSensors()
+let sensors = dedup(readSensors())
 let mode = CommandLine.arguments.dropFirst().first ?? "avg"
 
 switch mode {
