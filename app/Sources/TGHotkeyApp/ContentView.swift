@@ -7,6 +7,8 @@ struct ContentView: View {
         TabView {
             SettingsView(config: $config)
                 .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
+            SensorsView()
+                .tabItem { Label("Sensors", systemImage: "thermometer.medium") }
             StatusView()
                 .tabItem { Label("Status", systemImage: "fan") }
             AboutView()
