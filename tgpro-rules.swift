@@ -86,34 +86,25 @@ func archiveRules(_ rules: [AutoBoostConfigModel]) -> Data {
     }
 }
 
-func runShell(_ script: String) {
+/// 通过 CFPreferences 路径写 prefs，触发 cfprefsd 给所有监听的进程发通知。
+/// TG Pro 会响应这个通知热重载它的 Auto Boost rules，**不需要重启 TG Pro**，
+/// 菜单栏图标也不会闪。
+func writePrefs(_ values: [String: Any]) {
+    let bundleID = "com.tunabellysoftware.tgpro" as CFString
+    for (key, val) in values {
+        CFPreferencesSetValue(key as CFString, val as CFPropertyList,
+                              bundleID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
+    }
+    CFPreferencesAppSynchronize(bundleID)
+}
+
+/// 兜底：如果 TG Pro 不在跑就启动它（CFPreferences 写完它一启动就会用新 rules）
+func ensureTGProRunning() {
     let task = Process()
     task.launchPath = "/bin/sh"
-    task.arguments = ["-c", script]
+    task.arguments = ["-c", #"/usr/bin/pgrep -f "/Applications/TG Pro.app/Contents/MacOS/TG Pro" >/dev/null || /usr/bin/open -gja "/Applications/TG Pro.app""#]
     task.launch()
     task.waitUntilExit()
-}
-
-// 退 TG Pro 并等它真死透 —— 必须在写 plist 之前调，否则它退出时会用
-// 内存里的旧状态覆盖我们刚写的 plist。
-// 注意：不要 killall cfprefsd —— 那会让全系统所有 app 的 prefs 连接卡住，
-// 用户会看到几秒钟的鼠标转圈。
-func quitTGProAndWait() {
-    runShell("""
-      /usr/bin/osascript -e 'quit app "TG Pro"' >/dev/null 2>&1
-      for i in $(seq 1 30); do
-        /usr/bin/pgrep -f "/Applications/TG Pro.app/Contents/MacOS/TG Pro" >/dev/null || break
-        sleep 0.1
-      done
-    """)
-}
-
-func openTGPro() {
-    // 先用 defaults read 触发 cfprefsd 重读我们刚写的 plist（不影响其它 app）
-    runShell("""
-      /usr/bin/defaults read com.tunabellysoftware.tgpro >/dev/null 2>&1
-      /usr/bin/open -gja "/Applications/TG Pro.app"
-    """)
 }
 
 // ---- subcommand ----
@@ -144,13 +135,12 @@ case "current":
     }
 
 case "clear":
-    quitTGProAndWait()
-    let prefs = loadPrefs()
-    prefs["autoConfigsPowerAdapter"] = archiveRules([])
-    prefs["autoConfigsBattery"] = archiveRules([])
-    savePrefs(prefs)
-    openTGPro()
-    print("✓ 清空规则 + 重启 TG Pro")
+    writePrefs([
+        "autoConfigsPowerAdapter": archiveRules([]),
+        "autoConfigsBattery": archiveRules([]),
+    ])
+    ensureTGProRunning()
+    print("✓ 清空规则（CFPreferences 热重载，不重启 TG Pro）")
 
 case "apply":
     // 从 stdin 读 JSON
@@ -171,18 +161,16 @@ case "apply":
         batteryRules.append(AutoBoostConfigModel(
             percent: percent, temp: temp, sensor: sensor, fan: fan, isBattery: true))
     }
-    quitTGProAndWait()
-    let prefs = loadPrefs()
-    prefs["autoConfigsPowerAdapter"] = archiveRules(powerRules)
-    prefs["autoConfigsBattery"] = archiveRules(batteryRules)
-    // 确保 useManualInsteadOfMax 是 false（否则规则不触发）
-    prefs["useManualInsteadOfMax"] = false
-    // 必须开 Auto Boost 模式 —— 否则 Auto Max 模式下所有 percent 都被强制 100%！
-    // TG Pro UI 写在 Settings → Fan → Completely Override System → "Use Auto Boost instead of Auto Max"
-    prefs["useAutoBoostInsteadOfAutoMax"] = true
-    savePrefs(prefs)
-    openTGPro()
-    print("✓ 应用 \(powerRules.count) 条规则 + 重启 TG Pro")
+    writePrefs([
+        "autoConfigsPowerAdapter": archiveRules(powerRules),
+        "autoConfigsBattery": archiveRules(batteryRules),
+        // 必须 false：Manual 模式压住 Auto Max 规则不触发
+        "useManualInsteadOfMax": false,
+        // 必须 true：Auto Max 模式下所有 percent 被强制 100%，只有 Auto Boost 才尊重 percent
+        "useAutoBoostInsteadOfAutoMax": true,
+    ])
+    ensureTGProRunning()
+    print("✓ 应用 \(powerRules.count) 条规则（CFPreferences 热重载，不重启 TG Pro）")
 
 default:
     bail("未知子命令: \(args[1])")
