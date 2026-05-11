@@ -153,7 +153,7 @@ case "clear":
         "autoConfigsBattery": archiveRules([]),
         "useManualInsteadOfMax": false,
         "useAutoBoostInsteadOfAutoMax": false,
-        "showFanInMenuBar": false,
+        "showFanInMenuBar": true,
     ])
     openTGPro()
     print("✓ 清空规则 + 关 Auto Boost + 关 TG Pro 菜单栏图标")
@@ -183,7 +183,7 @@ case "apply":
         "autoConfigsBattery": archiveRules(batteryRules),
         "useManualInsteadOfMax": false,
         "useAutoBoostInsteadOfAutoMax": true,
-        "showFanInMenuBar": false,
+        "showFanInMenuBar": true,
     ])
     openTGPro()
     print("✓ 应用 \(powerRules.count) 条规则（TG Pro 图标已隐藏，重启无闪）")
