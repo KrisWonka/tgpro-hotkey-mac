@@ -156,7 +156,7 @@ case "clear":
         "showFanInMenuBar": true,
     ])
     openTGPro()
-    print("✓ 清空规则 + 关 Auto Boost + 关 TG Pro 菜单栏图标")
+    print("✓ 清空规则 + 关 Auto Boost")
 
 case "apply":
     // 从 stdin 读 JSON
@@ -186,7 +186,7 @@ case "apply":
         "showFanInMenuBar": true,
     ])
     openTGPro()
-    print("✓ 应用 \(powerRules.count) 条规则（TG Pro 图标已隐藏，重启无闪）")
+    print("✓ 应用 \(powerRules.count) 条规则")
 
 default:
     bail("未知子命令: \(args[1])")
