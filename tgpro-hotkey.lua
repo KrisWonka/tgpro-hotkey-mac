@@ -197,15 +197,49 @@ end
 --   第 2 行: Fans Off       (无 SMC 访问权限拿不到 RPM)
 local statusBar = hs.menubar.new(true, "tgproHotkeyIndicator")
 
+-- 通过查 iStat Menus 的 history.db 拿风扇 RPM
+-- iStat Menus 7 把所有 sensor 历史写在 ~/Library/Application Support/iStat Menus 7/history/history.db
+-- 风扇 RPM 是几个 key，value 在 1500-8500 范围。取最近的 5 秒间隔行。
+-- 注：iStat 每 ~60s 才落盘一次，所以 RPM 数字会有最多 ~60s 延迟
+local ISTAT_DB = os.getenv("HOME") .. "/Library/Application Support/iStat Menus 7/history/history.db"
+
+local function readFanRPMs()
+  local f = io.open(ISTAT_DB, "r"); if not f then return nil end; f:close()
+  local cmd = string.format(
+    [[/usr/bin/sqlite3 -readonly %q "SELECT key, value FROM sensors WHERE interval=5 AND value BETWEEN 1500 AND 8500 AND time > strftime('%%s','now')-300 ORDER BY time DESC, value DESC LIMIT 4" 2>/dev/null]],
+    ISTAT_DB
+  )
+  local h = io.popen(cmd); if not h then return nil end
+  local out = h:read("*a"); h:close()
+  -- 同 key 只保留最新一条；按 value 降序拿前 2 个 = 假设是「当前实际转速」
+  local seen, rpms = {}, {}
+  for k, v in (out or ""):gmatch("(%d+)|([%d%.]+)") do
+    if not seen[k] then
+      seen[k] = true
+      table.insert(rpms, tonumber(v))
+    end
+  end
+  if #rpms == 0 then return nil end
+  table.sort(rpms, function(a,b) return a > b end)
+  return rpms  -- 已按降序排，rpms[1] 是最快
+end
+
 local function fmtTitle()
   local step = cfg.cycleSteps[cycleIndex] or {}
   local mode = effectiveName(step)
   local t = readTemp()
   local tempStr = t and string.format("%d°C", math.floor(t + 0.5)) or "—°C"
-  -- 单行显示：档位 + 当前 readtemp 平均
-  local line = string.format("%s  %s", mode, tempStr)
-  return hs.styledtext.new(line, {
-    font = { name = "Menlo", size = 11 },
+  local line1 = string.format("%s  %s", mode, tempStr)
+  local rpms = readFanRPMs()
+  local line2
+  if rpms and #rpms > 0 then
+    line2 = string.format("%d RPM", math.floor(rpms[1] + 0.5))
+  else
+    line2 = "Fans —"
+  end
+  return hs.styledtext.new(line1 .. "\n" .. line2, {
+    font = { name = "Menlo", size = 9 },
+    paragraphStyle = { alignment = "right", lineSpacing = -2 },
   })
 end
 
