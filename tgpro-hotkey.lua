@@ -191,11 +191,72 @@ if cfg.hotkeyEnabled and cfg.hotkeyKey and #cfg.hotkeyMods > 0 then
   hs.hotkey.bind(cfg.hotkeyMods, cfg.hotkeyKey, cycle)
 end
 
+-- ===== 菜单栏自定义图标 =====
+-- 仿 TG Pro 风格：两行小字
+--   第 1 行: 档位名         当前温度
+--   第 2 行: Fans Off       (无 SMC 访问权限拿不到 RPM)
+local statusBar = hs.menubar.new(true, "tgproHotkeyIndicator")
+
+local function fmtTitle()
+  local step = cfg.cycleSteps[cycleIndex] or {}
+  local mode = effectiveName(step)
+  local t = readTemp()
+  local tempStr = t and string.format("%d°C", math.floor(t + 0.5)) or "—°C"
+  -- TG Pro 风格的 monospaced 小字 + 两行
+  local line1 = string.format("%s  %s", mode, tempStr)
+  local line2 = "Fans —"  -- TODO: 拿不到 SMC fan RPM；显示静态占位
+  return hs.styledtext.new(line1 .. "\n" .. line2, {
+    font = { name = "Menlo", size = 9 },
+    paragraphStyle = { alignment = "right", lineSpacing = -2 },
+  })
+end
+
+local function refreshStatusBar()
+  if not statusBar then return end
+  statusBar:setTitle(fmtTitle())
+end
+
+if statusBar then
+  statusBar:setClickCallback(function() cycle() end)
+  -- 右键菜单：直接选档位，不用循环
+  local function buildMenu()
+    local items = {}
+    for i, s in ipairs(cfg.cycleSteps or {}) do
+      table.insert(items, {
+        title = string.format("%s%s", i == cycleIndex and "● " or "   ", effectiveName(s)),
+        fn = function()
+          cycleIndex = ((i - 1) % #cfg.cycleSteps + #cfg.cycleSteps) % #cfg.cycleSteps
+          cycle()  -- cycle() 会 +1
+        end,
+      })
+    end
+    table.insert(items, { title = "-" })
+    table.insert(items, { title = "打开 TG Hotkey 配置…", fn = function() hs.execute("/usr/bin/open -a 'TG Hotkey'") end })
+    table.insert(items, { title = "打开 TG Pro 主窗…", fn = function() hs.execute("/usr/bin/open -a 'TG Pro'") end })
+    return items
+  end
+  statusBar:setMenu(buildMenu)
+  refreshStatusBar()
+  -- 每 2 秒刷新温度显示
+  hs.timer.doEvery(2, refreshStatusBar)
+end
+
 -- 启动时弹一下当前默认档位（cycleIndex 起点 = 1）
 if cfg.cycleSteps and cfg.cycleSteps[cycleIndex] then
   hs.timer.doAfter(0.5, function()
     alert(effectiveName(cfg.cycleSteps[cycleIndex]))
   end)
+end
+
+-- cycle 后立刻刷新状态栏
+local _origCycle = cycle
+cycle = function()
+  _origCycle()
+  refreshStatusBar()
+end
+if cfg.hotkeyEnabled and cfg.hotkeyKey and #cfg.hotkeyMods > 0 then
+  hs.hotkey.deleteAll(cfg.hotkeyMods, cfg.hotkeyKey)
+  hs.hotkey.bind(cfg.hotkeyMods, cfg.hotkeyKey, cycle)
 end
 
 return M
