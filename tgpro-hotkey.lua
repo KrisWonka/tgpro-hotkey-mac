@@ -65,6 +65,7 @@ local function readTemp()
 end
 
 local function alert(text)
+  hs.alert.closeAll(0)  -- 先把现有 alert 立刻关掉，避免连按时堆成一列
   if cfg.alertEnabled then hs.alert.show(text, cfg.alertDuration) end
 end
 
