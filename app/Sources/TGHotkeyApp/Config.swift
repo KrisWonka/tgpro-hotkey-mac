@@ -105,7 +105,7 @@ struct CycleStep: Codable, Identifiable, Equatable {
 
     // Temperature 专属
     var curve: [CurvePoint] = []
-    var configSensor: Int = 4   // 4 = Highest CPU（NAND/SSD 短暂升温不会误触发）
+    var configSensor: Int = 0   // 0 = Any Sensor（Auto Boost 模式下 4 不一定对应 Highest CPU，0 最稳）
     var configFan: Int = 0      // 0 = All Fans
 
     var effectiveName: String {

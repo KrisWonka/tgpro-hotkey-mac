@@ -20,7 +20,7 @@ local cfg = {
   -- 默认 3 档：Silence (Auto) / Performance / Turbo（GUI 第一次保存会覆盖此 JSON）
   cycleSteps = {
     { type = "auto", name = "Silence" },
-    { type = "temperature", name = "Performance", configSensor = 4, configFan = 0, curve = {
+    { type = "temperature", name = "Performance", configSensor = 0, configFan = 0, curve = {
         { temperatureLimit = 30, percent = 0 },
         { temperatureLimit = 40, percent = 0 },
         { temperatureLimit = 50, percent = 25 },
@@ -29,7 +29,7 @@ local cfg = {
         { temperatureLimit = 80, percent = 90 },
         { temperatureLimit = 90, percent = 100 },
     } },
-    { type = "temperature", name = "Turbo", configSensor = 4, configFan = 0, curve = {
+    { type = "temperature", name = "Turbo", configSensor = 0, configFan = 0, curve = {
         { temperatureLimit = 20, percent = 0 },
         { temperatureLimit = 30, percent = 0 },
         { temperatureLimit = 45, percent = 0 },
@@ -128,7 +128,7 @@ end
 
 local function startCooldown(step)
   cancelCooldown()
-  applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
+  applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 0, configFan = 0 } })
   alert(effectiveName(step))
   local target = step.cooldownTargetTemp or 40
   local poll   = step.cooldownPollSec or 3
@@ -150,7 +150,7 @@ local function applyTemperature(step)
       table.insert(rules, {
         percent = p.percent,
         temperatureLimit = p.temperatureLimit or 0,
-        configSensor = step.configSensor or 4,  -- 4 = Highest CPU
+        configSensor = step.configSensor or 0,  -- 4 = Highest CPU
         configFan = step.configFan or 0,        -- All Fans
       })
     end
@@ -166,10 +166,10 @@ local function applyStep(step)
   if t == "auto" then
     -- 用「0% always」规则代替真 clear：保持 CFPreferences 热重载（无 TG Pro 重启 = 无菜单栏闪），
     -- 风扇会降到硬件最低 RPM（约 2317），听感非常安静（虽不是 0 RPM）
-    applyRules({ { percent = 0, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
+    applyRules({ { percent = 0, temperatureLimit = 0, configSensor = 0, configFan = 0 } })
     alert(effectiveName(step))
   elseif t == "fullBlast" then
-    applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
+    applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 0, configFan = 0 } })
     scheduleAutoRevert(step)
     alert(effectiveName(step))
   elseif t == "cooldown" then
