@@ -97,7 +97,7 @@ func writePrefs(_ values: [String: Any]) {
     CFPreferencesAppSynchronize(bundleID)
 }
 
-func restartTGPro() {
+func quitTGProAndWait() {
     let task = Process()
     task.launchPath = "/bin/sh"
     task.arguments = ["-c", """
@@ -106,8 +106,15 @@ func restartTGPro() {
         /usr/bin/pgrep -f "/Applications/TG Pro.app/Contents/MacOS/TG Pro" >/dev/null || break
         sleep 0.1
       done
-      /usr/bin/open -gja "/Applications/TG Pro.app"
     """]
+    task.launch()
+    task.waitUntilExit()
+}
+
+func openTGPro() {
+    let task = Process()
+    task.launchPath = "/bin/sh"
+    task.arguments = ["-c", #"/usr/bin/open -gja "/Applications/TG Pro.app""#]
     task.launch()
     task.waitUntilExit()
 }
@@ -140,15 +147,16 @@ case "current":
     }
 
 case "clear":
+    quitTGProAndWait()  // 必须先退，否则 TG Pro 内存状态会反向覆盖我们的写入
     writePrefs([
         "autoConfigsPowerAdapter": archiveRules([]),
         "autoConfigsBattery": archiveRules([]),
         "useManualInsteadOfMax": false,
         "useAutoBoostInsteadOfAutoMax": false,
-        "showFanInMenuBar": false,  // 永远不显示 TG Pro 自己图标，无闪
+        "showFanInMenuBar": false,
     ])
-    restartTGPro()
-    print("✓ 清空规则 + 关 Auto Boost + 关 TG Pro 菜单栏图标 + 重启")
+    openTGPro()
+    print("✓ 清空规则 + 关 Auto Boost + 关 TG Pro 菜单栏图标")
 
 case "apply":
     // 从 stdin 读 JSON
@@ -169,15 +177,16 @@ case "apply":
         batteryRules.append(AutoBoostConfigModel(
             percent: percent, temp: temp, sensor: sensor, fan: fan, isBattery: true))
     }
+    quitTGProAndWait()  // 必须先退
     writePrefs([
         "autoConfigsPowerAdapter": archiveRules(powerRules),
         "autoConfigsBattery": archiveRules(batteryRules),
         "useManualInsteadOfMax": false,
         "useAutoBoostInsteadOfAutoMax": true,
-        "showFanInMenuBar": false,  // 永远不显示 TG Pro 自己图标，无闪
+        "showFanInMenuBar": false,
     ])
-    restartTGPro()
-    print("✓ 应用 \(powerRules.count) 条规则 + 重启 TG Pro（图标已隐藏，无闪）")
+    openTGPro()
+    print("✓ 应用 \(powerRules.count) 条规则（TG Pro 图标已隐藏，重启无闪）")
 
 default:
     bail("未知子命令: \(args[1])")
