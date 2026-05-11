@@ -56,7 +56,6 @@ local autoRevertTimer = nil
 local cooldownTimer   = nil
 -- 起点假设为列表第 1 档（Silence / Auto = Mac 默认状态），按一下进第 2 档
 local cycleIndex      = 1
-local applyInProgress = false  -- 防抖：apply 期间忽略新按键
 
 local function readTemp()
   local f = io.popen(READTEMP_BIN .. " 2>/dev/null")
@@ -69,29 +68,24 @@ local function alert(text)
   if cfg.alertEnabled then hs.alert.show(text, cfg.alertDuration) end
 end
 
--- 兜底：万一 hs.task 回调因为子进程异常没触发，5 秒后强制清防抖标志
-local function setApplyInProgress(running)
-  applyInProgress = running
-  if running then
-    hs.timer.doAfter(5, function() applyInProgress = false end)
-  end
+-- shell 转义：单引号包裹 + 内部单引号转义
+local function shellQuote(s)
+  return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
 end
 
--- 异步把规则数组喂给 tgpro-rules（同步会阻塞 Hammerspoon 1-2 秒）
+-- Fire-and-forget 把规则喂给 tgpro-rules
+-- 写到临时文件再 cat 进去，避免每次 stdin pipe 的麻烦
 local function applyRules(rules)
-  setApplyInProgress(true)
   local body = hs.json.encode({ rules = rules or {} })
-  local task = hs.task.new(TGPRO_BIN, function() setApplyInProgress(false) end, { "apply" })
-  if not task then setApplyInProgress(false); return end
-  task:setInput(body)
-  task:start()
+  local tmp = os.tmpname()
+  local f = io.open(tmp, "w"); if not f then return end
+  f:write(body); f:close()
+  os.execute(string.format("(/bin/cat %s | %s apply >/dev/null 2>&1; /bin/rm -f %s) &",
+    shellQuote(tmp), shellQuote(TGPRO_BIN), shellQuote(tmp)))
 end
 
 local function clearRules()
-  setApplyInProgress(true)
-  local task = hs.task.new(TGPRO_BIN, function() setApplyInProgress(false) end, { "clear" })
-  if not task then setApplyInProgress(false); return end
-  task:start()
+  os.execute(string.format("(%s clear >/dev/null 2>&1) &", shellQuote(TGPRO_BIN)))
 end
 
 local function defaultName(t)
@@ -183,7 +177,6 @@ local function applyStep(step)
 end
 
 local function cycle()
-  if applyInProgress then return end  -- 防抖
   local steps = cfg.cycleSteps or {}
   if #steps == 0 then
     alert("循环列表为空")
