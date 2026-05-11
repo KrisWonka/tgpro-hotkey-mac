@@ -145,13 +145,15 @@ end
 local function applyTemperature(step)
   local rules = {}
   for _, p in ipairs(step.curve or {}) do
-    -- percent < 0 = "Stop" 档，跳过不写规则（让系统 Auto 决定，风扇可停）
-    if (p.percent or 0) >= 0 then
+    -- 跳过 percent ≤ 0 的点：
+    --   < 0 = "Stop" 档（用户拖到底部）
+    --   = 0 = "不强制 boost" — 写 0% 规则会被 TG Pro 当 boost cap 压住上面的非零规则
+    if (p.percent or 0) > 0 then
       table.insert(rules, {
         percent = p.percent,
         temperatureLimit = p.temperatureLimit or 0,
-        configSensor = step.configSensor or 0,  -- 4 = Highest CPU
-        configFan = step.configFan or 0,        -- All Fans
+        configSensor = step.configSensor or 0,
+        configFan = step.configFan or 0,
       })
     end
   end
