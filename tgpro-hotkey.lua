@@ -69,20 +69,28 @@ local function alert(text)
   if cfg.alertEnabled then hs.alert.show(text, cfg.alertDuration) end
 end
 
+-- 兜底：万一 hs.task 回调因为子进程异常没触发，5 秒后强制清防抖标志
+local function setApplyInProgress(running)
+  applyInProgress = running
+  if running then
+    hs.timer.doAfter(5, function() applyInProgress = false end)
+  end
+end
+
 -- 异步把规则数组喂给 tgpro-rules（同步会阻塞 Hammerspoon 1-2 秒）
 local function applyRules(rules)
-  applyInProgress = true
+  setApplyInProgress(true)
   local body = hs.json.encode({ rules = rules or {} })
-  local task = hs.task.new(TGPRO_BIN, function() applyInProgress = false end, { "apply" })
-  if not task then applyInProgress = false; return end
+  local task = hs.task.new(TGPRO_BIN, function() setApplyInProgress(false) end, { "apply" })
+  if not task then setApplyInProgress(false); return end
   task:setInput(body)
   task:start()
 end
 
 local function clearRules()
-  applyInProgress = true
-  local task = hs.task.new(TGPRO_BIN, function() applyInProgress = false end, { "clear" })
-  if not task then applyInProgress = false; return end
+  setApplyInProgress(true)
+  local task = hs.task.new(TGPRO_BIN, function() setApplyInProgress(false) end, { "clear" })
+  if not task then setApplyInProgress(false); return end
   task:start()
 end
 
