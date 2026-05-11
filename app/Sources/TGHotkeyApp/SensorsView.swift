@@ -32,8 +32,8 @@ struct SensorsView: View {
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
-                    ForEach(displayedSensors, id: \.0) { name, value in
-                        sensorRow(name: name, value: value)
+                    ForEach(Array(displayedSensors.enumerated()), id: \.offset) { _, item in
+                        sensorRow(name: item.0, value: item.1)
                     }
                 }
                 .padding(.vertical, 4)
