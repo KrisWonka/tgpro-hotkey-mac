@@ -86,9 +86,8 @@ func archiveRules(_ rules: [AutoBoostConfigModel]) -> Data {
     }
 }
 
-/// 通过 CFPreferences 路径写 prefs，触发 cfprefsd 给所有监听的进程发通知。
-/// TG Pro 会响应这个通知热重载它的 Auto Boost rules，**不需要重启 TG Pro**，
-/// 菜单栏图标也不会闪。
+/// 写 prefs + 重启 TG Pro。TG Pro 的菜单栏图标已被我们永久关掉（showFanInMenuBar=false），
+/// 所以重启对用户完全无感（没有图标可闪）。状态显示由 Hammerspoon 自己的单字母 item 负责。
 func writePrefs(_ values: [String: Any]) {
     let bundleID = "com.tunabellysoftware.tgpro" as CFString
     for (key, val) in values {
@@ -98,11 +97,17 @@ func writePrefs(_ values: [String: Any]) {
     CFPreferencesAppSynchronize(bundleID)
 }
 
-/// 兜底：如果 TG Pro 不在跑就启动它（CFPreferences 写完它一启动就会用新 rules）
-func ensureTGProRunning() {
+func restartTGPro() {
     let task = Process()
     task.launchPath = "/bin/sh"
-    task.arguments = ["-c", #"/usr/bin/pgrep -f "/Applications/TG Pro.app/Contents/MacOS/TG Pro" >/dev/null || /usr/bin/open -gja "/Applications/TG Pro.app""#]
+    task.arguments = ["-c", """
+      /usr/bin/osascript -e 'quit app "TG Pro"' >/dev/null 2>&1
+      for i in $(seq 1 30); do
+        /usr/bin/pgrep -f "/Applications/TG Pro.app/Contents/MacOS/TG Pro" >/dev/null || break
+        sleep 0.1
+      done
+      /usr/bin/open -gja "/Applications/TG Pro.app"
+    """]
     task.launch()
     task.waitUntilExit()
 }
@@ -139,11 +144,11 @@ case "clear":
         "autoConfigsPowerAdapter": archiveRules([]),
         "autoConfigsBattery": archiveRules([]),
         "useManualInsteadOfMax": false,
-        // 关键：必须关掉 Auto Boost 模式，否则即便规则清空 TG Pro 也会保留上次 boost 状态
         "useAutoBoostInsteadOfAutoMax": false,
+        "showFanInMenuBar": false,  // 永远不显示 TG Pro 自己图标，无闪
     ])
-    ensureTGProRunning()
-    print("✓ 清空规则 + 关 Auto Boost（回到系统纯 Auto）")
+    restartTGPro()
+    print("✓ 清空规则 + 关 Auto Boost + 关 TG Pro 菜单栏图标 + 重启")
 
 case "apply":
     // 从 stdin 读 JSON
@@ -167,13 +172,12 @@ case "apply":
     writePrefs([
         "autoConfigsPowerAdapter": archiveRules(powerRules),
         "autoConfigsBattery": archiveRules(batteryRules),
-        // 必须 false：Manual 模式压住 Auto Max 规则不触发
         "useManualInsteadOfMax": false,
-        // 必须 true：Auto Max 模式下所有 percent 被强制 100%，只有 Auto Boost 才尊重 percent
         "useAutoBoostInsteadOfAutoMax": true,
+        "showFanInMenuBar": false,  // 永远不显示 TG Pro 自己图标，无闪
     ])
-    ensureTGProRunning()
-    print("✓ 应用 \(powerRules.count) 条规则（CFPreferences 热重载，不重启 TG Pro）")
+    restartTGPro()
+    print("✓ 应用 \(powerRules.count) 条规则 + 重启 TG Pro（图标已隐藏，无闪）")
 
 default:
     bail("未知子命令: \(args[1])")
