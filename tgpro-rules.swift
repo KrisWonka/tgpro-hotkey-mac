@@ -138,9 +138,12 @@ case "clear":
     writePrefs([
         "autoConfigsPowerAdapter": archiveRules([]),
         "autoConfigsBattery": archiveRules([]),
+        "useManualInsteadOfMax": false,
+        // 关键：必须关掉 Auto Boost 模式，否则即便规则清空 TG Pro 也会保留上次 boost 状态
+        "useAutoBoostInsteadOfAutoMax": false,
     ])
     ensureTGProRunning()
-    print("✓ 清空规则（CFPreferences 热重载，不重启 TG Pro）")
+    print("✓ 清空规则 + 关 Auto Boost（回到系统纯 Auto）")
 
 case "apply":
     // 从 stdin 读 JSON
