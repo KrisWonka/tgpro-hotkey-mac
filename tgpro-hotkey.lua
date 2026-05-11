@@ -179,6 +179,23 @@ local function applyStep(step)
   end
 end
 
+-- 菜单栏单字母指示当前档位（S/P/T 等）
+local statusBar = hs.menubar.new(true, "tgproHotkeyMode")
+local function refreshStatusBar()
+  if not statusBar then return end
+  local step = (cfg.cycleSteps or {})[cycleIndex]
+  if not step then statusBar:setTitle("?"); return end
+  -- 取 effectiveName 第一个字符（中文/英文都能拿首字符）
+  local name = effectiveName(step)
+  local first = name:sub(1, name:find("[\128-\255]") and 3 or 1):upper()
+  statusBar:setTitle(first)
+end
+if statusBar then
+  statusBar:setClickCallback(function() cycle() end)
+  statusBar:setTooltip("点击切下一档（同 ⌃⌥⌘+8）")
+  refreshStatusBar()
+end
+
 local function cycle()
   local steps = cfg.cycleSteps or {}
   if #steps == 0 then
@@ -187,6 +204,7 @@ local function cycle()
   end
   cycleIndex = cycleIndex % #steps + 1
   applyStep(steps[cycleIndex])
+  refreshStatusBar()
 end
 
 if cfg.hotkeyEnabled and cfg.hotkeyKey and #cfg.hotkeyMods > 0 then
