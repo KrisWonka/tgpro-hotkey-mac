@@ -214,9 +214,35 @@ struct SettingsView: View {
                         .font(.system(.body, design: .monospaced))
                 }
             case .temperature:
+                sensorPicker(step: step)
                 temperatureCurveEditor(step: step)
             }
         }
+    }
+
+    @ViewBuilder
+    private func sensorPicker(step: Binding<CycleStep>) -> some View {
+        HStack {
+            Text("参考 Sensor")
+                .frame(width: 80, alignment: .leading)
+            Picker("", selection: step.configSensor) {
+                Text("Highest CPU (推荐)").tag(4)
+                Text("Any Sensor (含 GPU/SSD/电池)").tag(0)
+                Text("自定义索引…").tag(-99)  // 占位，下面 TextField 用
+            }
+            .labelsHidden()
+            .frame(maxWidth: 220)
+            if step.wrappedValue.configSensor == -99 {
+                TextField("索引", value: step.configSensor, format: .number)
+                    .textFieldStyle(.roundedBorder).frame(width: 50)
+            } else {
+                Text("(index = \(step.wrappedValue.configSensor))")
+                    .font(.caption).foregroundColor(.secondary)
+            }
+            Spacer()
+        }
+        Text("Sensor 索引跨 Mac 型号会变；不确定就在 Sensors 标签里看实际可用的值")
+            .font(.caption2).foregroundColor(.secondary)
     }
 
     @ViewBuilder
