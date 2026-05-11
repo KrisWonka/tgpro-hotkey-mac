@@ -23,7 +23,7 @@ class AutoBoostConfigModel: NSObject, NSCoding {
     var percent: Int = 100
     var temperatureLimit: Double = 0
     var isForBatteryPower: Bool = false
-    var configSensor: Int = 4   // 默认 Highest CPU（最贴近卡顿源；NAND/SSD 短温升不误触发）
+    var configSensor: Int = 0   // 默认 Any Sensor（Auto Boost 模式下 4 不一定对应 Highest CPU）
     var configFan: Int = 0      // 默认 All Fans
     var isEnabled: Bool = true
 
@@ -157,7 +157,7 @@ case "apply":
     for r in rulesJson {
         let percent = r["percent"] as? Int ?? 100
         let temp = (r["temperatureLimit"] as? Double) ?? Double(r["temperatureLimit"] as? Int ?? 0)
-        let sensor = r["configSensor"] as? Int ?? 4
+        let sensor = r["configSensor"] as? Int ?? 0
         let fan = r["configFan"] as? Int ?? 0
         powerRules.append(AutoBoostConfigModel(
             percent: percent, temp: temp, sensor: sensor, fan: fan, isBattery: false))
