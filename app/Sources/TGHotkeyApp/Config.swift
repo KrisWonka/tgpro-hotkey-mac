@@ -66,10 +66,11 @@ enum CurveTemplate: String, CaseIterable, Identifiable {
         case .performance:
             return [
                 CurvePoint(temperatureLimit: 30, percent: 0),
-                CurvePoint(temperatureLimit: 40, percent: 0),
-                CurvePoint(temperatureLimit: 50, percent: 25),
-                CurvePoint(temperatureLimit: 60, percent: 60),
-                CurvePoint(temperatureLimit: 70, percent: 75),
+                CurvePoint(temperatureLimit: 35, percent: 10),
+                CurvePoint(temperatureLimit: 45, percent: 25),
+                CurvePoint(temperatureLimit: 50, percent: 55),
+                CurvePoint(temperatureLimit: 60, percent: 75),
+                CurvePoint(temperatureLimit: 70, percent: 80),
                 CurvePoint(temperatureLimit: 80, percent: 90),
                 CurvePoint(temperatureLimit: 90, percent: 100),
             ]
@@ -77,8 +78,9 @@ enum CurveTemplate: String, CaseIterable, Identifiable {
             return [
                 CurvePoint(temperatureLimit: 20, percent: 0),
                 CurvePoint(temperatureLimit: 30, percent: 0),
-                CurvePoint(temperatureLimit: 45, percent: 0),
-                CurvePoint(temperatureLimit: 50, percent: 35),
+                CurvePoint(temperatureLimit: 35, percent: 10),
+                CurvePoint(temperatureLimit: 40, percent: 50),
+                CurvePoint(temperatureLimit: 50, percent: 75),
                 CurvePoint(temperatureLimit: 60, percent: 95),
                 CurvePoint(temperatureLimit: 70, percent: 100),
                 CurvePoint(temperatureLimit: 80, percent: 100),

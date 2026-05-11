@@ -22,18 +22,20 @@ local cfg = {
     { type = "auto", name = "Silence" },
     { type = "temperature", name = "Performance", configSensor = 0, configFan = 0, curve = {
         { temperatureLimit = 30, percent = 0 },
-        { temperatureLimit = 40, percent = 0 },
-        { temperatureLimit = 50, percent = 25 },
-        { temperatureLimit = 60, percent = 60 },
-        { temperatureLimit = 70, percent = 75 },
+        { temperatureLimit = 35, percent = 10 },
+        { temperatureLimit = 45, percent = 25 },
+        { temperatureLimit = 50, percent = 55 },
+        { temperatureLimit = 60, percent = 75 },
+        { temperatureLimit = 70, percent = 80 },
         { temperatureLimit = 80, percent = 90 },
         { temperatureLimit = 90, percent = 100 },
     } },
     { type = "temperature", name = "Turbo", configSensor = 0, configFan = 0, curve = {
         { temperatureLimit = 20, percent = 0 },
         { temperatureLimit = 30, percent = 0 },
-        { temperatureLimit = 45, percent = 0 },
-        { temperatureLimit = 50, percent = 35 },
+        { temperatureLimit = 35, percent = 10 },
+        { temperatureLimit = 40, percent = 50 },
+        { temperatureLimit = 50, percent = 75 },
         { temperatureLimit = 60, percent = 95 },
         { temperatureLimit = 70, percent = 100 },
         { temperatureLimit = 80, percent = 100 },
@@ -145,10 +147,8 @@ end
 local function applyTemperature(step)
   local rules = {}
   for _, p in ipairs(step.curve or {}) do
-    -- 跳过 percent ≤ 0 的点：
-    --   < 0 = "Stop" 档（用户拖到底部）
-    --   = 0 = "不强制 boost" — 写 0% 规则会被 TG Pro 当 boost cap 压住上面的非零规则
-    if (p.percent or 0) > 0 then
+    -- 只跳过 Stop 档（percent < 0）；0% 写成规则 → TG Pro 把对应温度区间设为最低 2317
+    if (p.percent or 0) >= 0 then
       table.insert(rules, {
         percent = p.percent,
         temperatureLimit = p.temperatureLimit or 0,

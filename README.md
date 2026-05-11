@@ -109,26 +109,39 @@ Edit `~/.hammerspoon/tgpro-hotkey-config.json` directly without the GUI, then re
   "alertDuration": 1.2,
   "alertCooldownDone": "Cooldown done ✓",
   "cycleSteps": [
-    { "type": "auto", "name": "" },
+    { "type": "auto", "name": "Silence" },
     { "type": "temperature", "name": "Performance",
-      "configSensor": 4, "configFan": 0,
+      "configSensor": 0, "configFan": 0,
       "curve": [
         { "temperatureLimit": 30, "percent": 0 },
-        { "temperatureLimit": 40, "percent": 30 },
-        { "temperatureLimit": 50, "percent": 45 },
-        { "temperatureLimit": 60, "percent": 60 },
-        { "temperatureLimit": 70, "percent": 75 },
+        { "temperatureLimit": 35, "percent": 10 },
+        { "temperatureLimit": 45, "percent": 25 },
+        { "temperatureLimit": 50, "percent": 55 },
+        { "temperatureLimit": 60, "percent": 75 },
+        { "temperatureLimit": 70, "percent": 80 },
         { "temperatureLimit": 80, "percent": 90 },
         { "temperatureLimit": 90, "percent": 100 }
       ]
     },
-    { "type": "fullBlast", "autoRevertEnabled": false, "autoRevertSec": 600 },
-    { "type": "cooldown", "cooldownTargetTemp": 40, "cooldownPollSec": 3 }
+    { "type": "temperature", "name": "Turbo",
+      "configSensor": 0, "configFan": 0,
+      "curve": [
+        { "temperatureLimit": 20, "percent": 0 },
+        { "temperatureLimit": 30, "percent": 0 },
+        { "temperatureLimit": 35, "percent": 10 },
+        { "temperatureLimit": 40, "percent": 50 },
+        { "temperatureLimit": 50, "percent": 75 },
+        { "temperatureLimit": 60, "percent": 95 },
+        { "temperatureLimit": 70, "percent": 100 },
+        { "temperatureLimit": 80, "percent": 100 },
+        { "temperatureLimit": 90, "percent": 100 }
+      ]
+    }
   ]
 }
 ```
 
-`cycleSteps[].type` is `auto` / `fullBlast` / `cooldown` / `temperature`. `configSensor` 4 = "Highest CPU"; `configFan` 0 = "All Fans" (TG Pro's internal indices).
+`cycleSteps[].type` is `auto` / `fullBlast` / `cooldown` / `temperature`. `configSensor` 0 = "Any Sensor" (works on all Macs); `configFan` 0 = "All Fans" (TG Pro's internal indices).
 
 ## Uninstall
 
