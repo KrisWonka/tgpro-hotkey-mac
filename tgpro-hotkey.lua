@@ -164,7 +164,9 @@ local function applyStep(step)
   cancelCooldown()
   local t = step and step.type
   if t == "auto" then
-    clearRules()
+    -- 用「0% always」规则代替真 clear：保持 CFPreferences 热重载（无 TG Pro 重启 = 无菜单栏闪），
+    -- 风扇会降到硬件最低 RPM（约 2317），听感非常安静（虽不是 0 RPM）
+    applyRules({ { percent = 0, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
     alert(effectiveName(step))
   elseif t == "fullBlast" then
     applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 4, configFan = 0 } })
