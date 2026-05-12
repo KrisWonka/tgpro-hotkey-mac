@@ -166,9 +166,9 @@ local function applyStep(step)
   cancelCooldown()
   local t = step and step.type
   if t == "auto" then
-    -- 用「0% always」规则代替真 clear：保持 CFPreferences 热重载（无 TG Pro 重启 = 无菜单栏闪），
-    -- 风扇会降到硬件最低 RPM（约 2317），听感非常安静（虽不是 0 RPM）
-    applyRules({ { percent = 0, temperatureLimit = 0, configSensor = 0, configFan = 0 } })
+    -- Silence = 真正放手：清空所有规则 + 重置 userSetMinRPMS，让 Apple 固件控制风扇
+    -- 空闲时风扇可完全停转（0 RPM）
+    clearRules()
     alert(effectiveName(step))
   elseif t == "fullBlast" then
     applyRules({ { percent = 100, temperatureLimit = 0, configSensor = 0, configFan = 0 } })

@@ -155,8 +155,13 @@ case "clear":
         "useAutoBoostInsteadOfAutoMax": false,
         "showFanInMenuBar": true,
     ])
+    // 清掉 userSetMinRPMS，让 TG Pro 用硬件默认（不强制最低 RPM = Apple 固件接管，空闲风扇可停）
+    let bundleID = "com.tunabellysoftware.tgpro" as CFString
+    CFPreferencesSetValue("userSetMinRPMS" as CFString, nil,
+                          bundleID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
+    CFPreferencesAppSynchronize(bundleID)
     openTGPro()
-    print("✓ 清空规则 + 关 Auto Boost")
+    print("✓ 清空规则 + 重置 userSetMinRPMS（让 Apple 固件控风扇）")
 
 case "apply":
     // 从 stdin 读 JSON
