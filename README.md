@@ -74,9 +74,14 @@ The installer compiles `readtemp` + `tgpro-rules` into `~/.hammerspoon/`, copies
 
 ### One-time TG Pro setup ⚠️
 
-After installing, open TG Pro once and:
-1. Grant the permissions it asks for (Accessibility, fan helper install — needs your password once)
-2. **Open Settings → Fan and confirm "Use Manual instead of Max" is NOT checked.** When that toggle is on, TG Pro ignores Auto Max Rules and our project can't drive fans.
+After installing, open TG Pro once and **grant the permissions it asks for** — the fan helper install needs your password once. The installer can't do this for you, and without that helper fan control does nothing.
+
+Everything else (the fan-takeover switches `fanControlType` / `enableSystemOverrides`) is configured automatically by `install.sh`. To verify:
+
+```bash
+defaults read com.tunabellysoftware.tgpro fanControlType          # should be 2
+defaults read com.tunabellysoftware.tgpro enableSystemOverrides   # should be (1, 1)
+```
 
 ## Usage
 
@@ -142,6 +147,64 @@ Edit `~/.hammerspoon/tgpro-hotkey-config.json` directly without the GUI, then re
 ```
 
 `cycleSteps[].type` is `auto` / `fullBlast` / `cooldown` / `temperature`. `configSensor` 0 = "Any Sensor" (works on all Macs); `configFan` 0 = "All Fans" (TG Pro's internal indices).
+
+## Troubleshooting
+
+### Switched to Turbo but the fan doesn't spin
+
+In order of likelihood:
+
+1. **The temperature hasn't reached the trigger point — usually this, not a bug.** Curves mean "temp ≥ threshold → that percentage". Turbo defaults to 0% below 30°C, 10% at 35°C, and only 50% at 40°C. An idle Mac in the mid-30s legitimately keeps the fan off. To verify:
+
+   ```bash
+   for i in 1 2 3 4; do (yes > /dev/null &); done   # load it up
+   ~/.hammerspoon/readtemp                          # watch the temp climb
+   pkill yes                                        # stop
+   ```
+
+2. **TG Pro isn't actually driving the fans.** The sneaky one: rules get written fine (`tgpro-rules apply` even reports success) but TG Pro sits in system-default mode and never executes them.
+
+   ```bash
+   defaults read com.tunabellysoftware.tgpro fanControlType         # 0 = system default (hands off), want 2
+   defaults read com.tunabellysoftware.tgpro enableSystemOverrides  # (0, 0) = no override, want (1, 1)
+   ```
+
+   `install.sh` sets both automatically. If you do it by hand, **quit TG Pro first** — it rewrites the plist from memory on exit, so a `defaults write` while it's running gets silently rolled back:
+
+   ```bash
+   osascript -e 'quit app "TG Pro"'; sleep 3
+   defaults write com.tunabellysoftware.tgpro fanControlType -int 2
+   defaults write com.tunabellysoftware.tgpro enableSystemOverrides -array -int 1 -int 1
+   open -ga "TG Pro"
+   ```
+
+3. **The fan helper isn't installed/authorized:**
+
+   ```bash
+   sudo launchctl print system/com.tunabellysoftware.TGFanHelper | grep 'state ='   # want running
+   ```
+
+### No mode letter (S / P / T) in the menu bar
+
+1. **The menu bar is full and the notch ate the icon.** On notched MacBooks status items are laid out right-to-left, and whatever doesn't fit ends up underneath the notch — **it exists, you just can't see it**. `hs.menuIcon(false)` hides Hammerspoon's own hammer and frees ~30px (`HIDE_HS_MENUICON=1 ./install.sh` does it for you); beyond that, trim other items (e.g. TG Pro's second temperature and fan RPM readouts).
+
+   Note: the `frame` Hammerspoon reports **does not account for notch occlusion** — hidden items still report normal coordinates, so you can't use coordinates to judge visibility.
+
+2. **Hammerspoon isn't set to launch at login.** After a reboot HS never starts, so icons and hotkeys are simply gone. The installer adds the login item for you.
+
+3. **The config wasn't really reloaded.** Running `open` against an already-running Hammerspoon just activates it and **does not reload `init.lua`**:
+
+   ```bash
+   osascript -e 'quit app "Hammerspoon"'; sleep 1; pkill -x Hammerspoon; open -ga Hammerspoon
+   ```
+
+### Hotkey works but clicking the menu bar icon does nothing
+
+A v1.0 bug, now fixed. The click callback referenced `cycle` before its `local function cycle` declaration, so the closure captured the *global* `cycle` (`nil`) and clicking raised `attempt to call a nil value`. The hotkey was unaffected because it binds after the definition. Update to the latest version.
+
+### The icon shows up and then disappears
+
+`hs.menubar` / `hs.timer` objects stored in `local` variables lose their last strong reference when the chunk finishes and get collected by Lua's GC. This project keeps them global (`statusBar`). Worth remembering when writing your own Hammerspoon modules.
 
 ## Uninstall
 

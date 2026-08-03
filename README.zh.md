@@ -74,9 +74,14 @@ cd tgpro-hotkey-mac
 
 ### TG Pro 一次性设置 ⚠️
 
-装完后打开 TG Pro 一次：
-1. 给它要求的权限（辅助功能、fan helper 安装要输一次密码）
-2. **进 Settings → Fan，确认「Use Manual instead of Max」没勾。** 勾上的话 TG Pro 会忽略 Auto Max Rules，本项目就管不了风扇。
+装完后打开 TG Pro 一次，**给它要求的权限**——fan helper 安装要输一次密码。这步脚本代替不了，没有这个 helper 风扇控制完全不生效。
+
+其余的风扇接管开关（`fanControlType` / `enableSystemOverrides`）`install.sh` 已经自动配好，不用手点。如果你想确认：
+
+```bash
+defaults read com.tunabellysoftware.tgpro fanControlType          # 要是 2
+defaults read com.tunabellysoftware.tgpro enableSystemOverrides   # 要是 (1, 1)
+```
 
 ## 使用
 
@@ -142,6 +147,64 @@ Spotlight 搜「TG Hotkey」打开。三个标签：
 ```
 
 `cycleSteps[].type` 是 `auto` / `fullBlast` / `cooldown` / `temperature` 之一。`configSensor` 0 = "Any Sensor"（跨 Mac 通用）；`configFan` 0 = "All Fans"（TG Pro 内部索引）。
+
+## 常见问题 / 踩过的坑
+
+### 切到 Turbo 了，风扇还是不转
+
+按可能性从高到低排查：
+
+1. **温度还没到触发点——多数情况是这个，不是故障。** 曲线是「温度 ≥ 某档 → 该档百分比」，Turbo 默认 ≤30°C 给 0%、35°C 给 10%、40°C 才 50%。机器闲着三十几度时风扇不转是**正确行为**。想验证就跑个负载：
+
+   ```bash
+   for i in 1 2 3 4; do (yes > /dev/null &); done   # 加负载
+   ~/.hammerspoon/readtemp                          # 看温度爬上去
+   pkill yes                                        # 停掉
+   ```
+
+2. **TG Pro 没在接管风扇。** 这是最隐蔽的一个：规则明明写进去了（`tgpro-rules apply` 也回显成功），但 TG Pro 处在系统默认模式，压根不执行。
+
+   ```bash
+   defaults read com.tunabellysoftware.tgpro fanControlType         # 0 = 系统默认（不接管），要 2
+   defaults read com.tunabellysoftware.tgpro enableSystemOverrides  # (0, 0) = 不覆写，要 (1, 1)
+   ```
+
+   新版 `install.sh` 会自动配这两个键。手动改的话**必须先退出 TG Pro**——它退出时会用内存里的旧值覆盖 plist，运行中直接 `defaults write` 会被悄悄回滚：
+
+   ```bash
+   osascript -e 'quit app "TG Pro"'; sleep 3
+   defaults write com.tunabellysoftware.tgpro fanControlType -int 2
+   defaults write com.tunabellysoftware.tgpro enableSystemOverrides -array -int 1 -int 1
+   open -ga "TG Pro"
+   ```
+
+3. **fan helper 没装/没授权。** 检查 daemon 在不在：
+
+   ```bash
+   sudo launchctl print system/com.tunabellysoftware.TGFanHelper | grep 'state ='   # 要 running
+   ```
+
+### 菜单栏没有那个档位字母（S / P / T）
+
+1. **菜单栏挤爆了，图标被刘海吞了。** 有刘海的 MacBook 上，状态栏图标是从右往左排的，排不下的会落到刘海底下——**不是没生成，是看不见**。用 `hs.menuIcon(false)` 隐藏 Hammerspoon 自己的锤子能腾出约 30px（安装时 `HIDE_HS_MENUICON=1 ./install.sh` 会自动加），再不够就精简别的图标（比如 TG Pro 自己的第二温度、风扇转速显示）。
+
+   注意：Hammerspoon 报的 `frame` 坐标**不反映刘海遮挡**，被盖住的图标照样有正常坐标，所以不能靠坐标判断可见性。
+
+2. **Hammerspoon 没开机自启。** 重启后 HS 没启动 = 图标和快捷键全没。新版 `install.sh` 会自动加登录项；也可在 Hammerspoon 设置里勾 Launch Hammerspoon at login。
+
+3. **改完配置没真正重载。** 对已在运行的 Hammerspoon 执行 `open` 只是激活窗口，**不会重新加载 init.lua**。要退干净再开：
+
+   ```bash
+   osascript -e 'quit app "Hammerspoon"'; sleep 1; pkill -x Hammerspoon; open -ga Hammerspoon
+   ```
+
+### 快捷键好使，但点菜单栏图标没反应
+
+v1.0 的 bug，已修。原因是点击回调里引用的 `cycle` 声明在它后面（`local function cycle`），闭包捕获到的是全局 `cycle`（`nil`），点击时报 `attempt to call a nil value`；热键因为绑定在定义之后所以不受影响。升级到最新版即可。
+
+### 图标出现了一会儿又消失
+
+`hs.menubar` / `hs.timer` 对象存在 `local` 变量里，chunk 执行完就没有强引用，会被 Lua GC 回收。本项目已改成全局变量（`statusBar`）。自己写 Hammerspoon 模块时也要注意这点。
 
 ## 卸载
 

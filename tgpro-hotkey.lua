@@ -182,7 +182,9 @@ local function applyStep(step)
 end
 
 -- 菜单栏单字母指示当前档位（S/P/T 等）
-local statusBar = hs.menubar.new(true, "tgproHotkeyMode")
+-- 注意：必须是全局的。存成 local 的话 chunk 执行完就没有强引用，Lua GC 随时会回收，
+-- 表现为菜单栏图标先出现后消失。
+statusBar = hs.menubar.new(true, "tgproHotkeyMode")
 local function refreshStatusBar()
   if not statusBar then return end
   local step = (cfg.cycleSteps or {})[cycleIndex]
@@ -198,7 +200,10 @@ if statusBar then
   refreshStatusBar()
 end
 
-local function cycle()
+-- 必须是全局 function：上面第 196 行的点击回调在它定义之前就引用了 cycle，
+-- 如果这里写成 local function，那个闭包捕获到的是全局 cycle（= nil），
+-- 点菜单栏图标会报 "attempt to call a nil value" —— 热键正常但点击失效。
+function cycle()
   local steps = cfg.cycleSteps or {}
   if #steps == 0 then
     alert("循环列表为空")
