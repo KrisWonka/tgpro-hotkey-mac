@@ -86,7 +86,7 @@ defaults read com.tunabellysoftware.tgpro enableSystemOverrides   # should be (1
 ## Usage
 
 ### Hotkey
-Default **`⌃⌥⌘ + 8`** advances one step in your cycle list (rebindable in the GUI). Default cycle: Auto → Performance → Turbo → Cooldown → Auto.
+Default **`⌃⌥⌘ + 8`** advances one step in your cycle list (rebindable in the GUI). Default cycle: Silence → Performance → Turbo → back to Silence. (Silence is an Auto step: TG Pro's rules are cleared and Apple firmware controls the fans.)
 
 ### Configurator (`TG Hotkey.app`)
 Spotlight search for "TG Hotkey". Three tabs:

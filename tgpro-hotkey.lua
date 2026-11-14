@@ -9,7 +9,7 @@ local CONFIG_PATH = HS_DIR .. "/tgpro-hotkey-config.json"
 local READTEMP_BIN = HS_DIR .. "/readtemp"
 local TGPRO_BIN    = HS_DIR .. "/tgpro-rules"
 
--- 默认配置（被 tgpro-hotkey-config.json 覆盖；JSON 是 FanHotkey.app 写的）
+-- 默认配置（被 tgpro-hotkey-config.json 覆盖；JSON 是 TG Hotkey.app 写的）
 local cfg = {
   hotkeyEnabled = true,
   hotkeyMods = { "ctrl", "alt", "cmd" },

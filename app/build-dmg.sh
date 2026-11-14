@@ -8,7 +8,7 @@ APP_NAME="TG Hotkey"
 APP_PATH="/Applications/${APP_NAME}.app"
 VERSION="${1:-1.0.0}"
 OUT_DIR="../dist"
-DMG_PATH="${OUT_DIR}/FanHotkey-${VERSION}.dmg"
+DMG_PATH="${OUT_DIR}/TGHotkey-${VERSION}.dmg"
 STAGING="$(mktemp -d)/dmg"
 
 [ -d "$APP_PATH" ] || { echo "✗ $APP_PATH 不存在，先跑 build-app.sh"; exit 1; }

@@ -86,7 +86,7 @@ defaults read com.tunabellysoftware.tgpro enableSystemOverrides   # 要是 (1, 1
 ## 使用
 
 ### 快捷键
-默认 **`⌃⌥⌘ + 8`** 在档位列表里前进一档（GUI 里可改）。默认列表：Auto → Performance → Turbo → Cooldown → Auto。
+默认 **`⌃⌥⌘ + 8`** 在档位列表里前进一档（GUI 里可改）。默认列表：Silence → Performance → Turbo → 回到 Silence。（Silence 就是 Auto 档：清空 TG Pro 的规则，风扇交还 Apple 固件控制。）
 
 ### 配置 GUI（**TG Hotkey.app**）
 Spotlight 搜「TG Hotkey」打开。三个标签：

@@ -40,7 +40,7 @@ struct StatusView: View {
             statusRow(
                 label: "Hammerspoon 运行中",
                 ok: hsRunning,
-                detail: hsRunning ? "已加载 fan-hotkey.lua" : "未运行 — 启动 Hammerspoon 才能用快捷键"
+                detail: hsRunning ? "已加载 tgpro-hotkey.lua" : "未运行 — 启动 Hammerspoon 才能用快捷键"
             )
 
             statusRow(
@@ -98,10 +98,10 @@ struct AboutView: View {
                 .foregroundColor(.accentColor)
             Text("TG Hotkey")
                 .font(.largeTitle).bold()
-            Text("一键 Macs Fan Control「全速 ↔ 自动」 + 自动回切")
+            Text("一个快捷键循环切换 TG Pro 的风扇档位（自定义温度曲线）")
                 .foregroundColor(.secondary)
-            Link("github.com/KrisWonka/fan-hotkey-mac",
-                 destination: URL(string: "https://github.com/KrisWonka/fan-hotkey-mac")!)
+            Link("github.com/KrisWonka/tgpro-hotkey-mac",
+                 destination: URL(string: "https://github.com/KrisWonka/tgpro-hotkey-mac")!)
             Spacer()
         }
         .padding(40)
